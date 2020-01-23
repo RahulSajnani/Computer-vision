@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 def Vid2Image(vid, directoryName):
     '''
@@ -84,6 +85,35 @@ def CaptureImagesWebcam(outputDir):
         isFrame, image = cam.read()
         i = i + 1
 
+def ChromaKey(image1, image2):
+
+    '''
+    Chroma keying function to replace background of image1 
+    Input:
+        image1 - foreground image
+        image2 - background image
+    Output:
+        imageOut - image with foreground of image 1 and background of image 2    
+    '''
+
+    hsv1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+    hsv2 = cv2.cvtColor(image2, cv2.COLOR_BGR2RGB)
+
+    lower_white = np.array([0,0,0], dtype=np.uint8)
+    upper_white = np.array([255,255,40], dtype=np.uint8)
+
+    mask = cv2.inRange(hsv1, lower_white, upper_white)
+    res = cv2.bitwise_and(image1,image1, mask= mask)
+
+    res = cv2.cvtColor(res, cv2.COLOR_RGB2BGR)
+    background = image2[:res.shape[0],:res.shape[1]]
+    background[0 != mask] = [0, 0, 0]
+    
+    
+    imageOut = res + background
+    return imageOut
+
+
 
 if __name__ == "__main__":
     
@@ -92,8 +122,14 @@ if __name__ == "__main__":
     videoOutputDir = 'videoDir'
     fps = 24
     webcamOutputDir = 'webOut'
-    vid = cv2.VideoCapture(videoName)
     videoOutputName = 'test.avi'
-    CaptureImagesWebcam(webcamOutputDir)
+    greenScreen = 'greenscreen.jpg'
+    image = 'webOut/000000.jpg'
+    image = cv2.imread(image)
+    greenScreen = cv2.imread(greenScreen)
+    ChromaKey(image, greenScreen)
+    # vid = cv2.VideoCapture(videoName)
+    # CaptureImagesWebcam(webcamOutputDir)
     # Vid2Image(vid, dirName)
     # Image2Vid(dirName, fps, videoOutputDir, videoOutputName)
+
