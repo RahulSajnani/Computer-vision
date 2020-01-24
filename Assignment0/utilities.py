@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-
+import time
 def Vid2Image(vid, directoryName):
     '''
     function to convert video to images
@@ -100,20 +100,104 @@ def ChromaKey(image1, image2):
     hsv2 = cv2.cvtColor(image2, cv2.COLOR_BGR2RGB)
 
     lower_white = np.array([0,0,0], dtype=np.uint8)
-    upper_white = np.array([255,255,40], dtype=np.uint8)
+    upper_white = np.array([255,255,100], dtype=np.uint8)
 
     mask = cv2.inRange(hsv1, lower_white, upper_white)
     res = cv2.bitwise_and(image1,image1, mask= mask)
 
-    res = cv2.cvtColor(res, cv2.COLOR_RGB2BGR)
+    
     background = image2[:res.shape[0],:res.shape[1]]
-    background[0 != mask] = [0, 0, 0]
+    background[ 0!= mask] = [0, 0, 0]
     
     
     imageOut = res + background
+    # imageOut = cv2.cvtColor(imageOut, cv2.COLOR_BGR2RGB)
+    plt.imshow(imageOut)
+    plt.show(10)
+    # plt.close()
     return imageOut
 
 
+def ReplaceBackground(inputDir, outputDir, background):
+
+    '''
+    Function to change background of directory
+    Input:
+        inputDir - input directory containing images
+        outputDir - directory to store output images
+    Output:
+        none
+    '''
+    if not os.path.exists(outputDir):
+        os.mkdir(outputDir)
+
+    imageArray = []
+    files = [images for images in os.listdir(inputDir) if os.path.isfile(os.path.join(inputDir, images))]
+    files.sort()
+
+    for i in range(len(files)):
+        fileName = inputDir + '/'+ files[i]
+        image = cv2.imread(fileName)
+        imageArray.append(image)
+
+    i = 0
+
+    for j in range(len(imageArray)):
+        # print(images.shape)
+        imageName = '%06d.jpg' % i
+        imagePath = outputDir + '/' + imageName
+        i = i + 1
+        print(i)
+        outputImage = ChromaKey(imageArray[j], background)
+        time.sleep(0.5)
+        cv2.imwrite(imagePath, outputImage)
+
+def ReplaceBackgroundGreen(inputDir1, inputDir2, outputDir):
+
+    '''
+    Function to change background of directory
+    Input:
+        inputDir - input directory containing images
+        outputDir - directory to store output images
+    Output:
+        none
+    '''
+    if not os.path.exists(outputDir):
+        os.mkdir(outputDir)
+
+    imageArray = []
+    files1 = [images for images in os.listdir(inputDir1) if os.path.isfile(os.path.join(inputDir1, images))]
+    files1.sort()
+
+    imageArray2 = []
+    files2 = [images for images in os.listdir(inputDir2) if os.path.isfile(os.path.join(inputDir2, images))]
+    files2.sort()
+
+    for i in range(len(files1)):
+        fileName = inputDir1 + '/'+ files1[i]
+        image = cv2.imread(fileName)
+        imageArray.append(image)
+
+    for i in range(len(files2)):
+        fileName = inputDir2 + '/'+ files2[i]
+        image = cv2.imread(fileName)
+        imageArray2.append(image)
+
+    i = 0
+    numFiles = len(files1)
+
+    if len(files2) < len(files1):
+        numFiles = len(files2)
+
+    for j in range(numFiles):
+        # print(images.shape)
+        imageName = '%06d.jpg' % i
+        imagePath = outputDir + '/' + imageName
+        i = i + 1
+        print(i)
+        outputImage = ChromaKey(imageArray[j], imageArray2[j])
+        time.sleep(0.5)
+        cv2.imwrite(imagePath, outputImage)
 
 if __name__ == "__main__":
     
@@ -124,12 +208,13 @@ if __name__ == "__main__":
     webcamOutputDir = 'webOut'
     videoOutputName = 'test.avi'
     greenScreen = 'greenscreen.jpg'
-    image = 'webOut/000000.jpg'
+    image = 'webOut/000063.jpg'
+    outputGreen = 'greenOut'
     image = cv2.imread(image)
     greenScreen = cv2.imread(greenScreen)
-    ChromaKey(image, greenScreen)
+    # ChromaKey(image, greenScreen)
     # vid = cv2.VideoCapture(videoName)
     # CaptureImagesWebcam(webcamOutputDir)
     # Vid2Image(vid, dirName)
     # Image2Vid(dirName, fps, videoOutputDir, videoOutputName)
-
+    ReplaceBackground(webcamOutputDir, outputGreen,greenScreen)
