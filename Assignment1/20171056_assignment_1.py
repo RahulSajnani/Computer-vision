@@ -39,9 +39,43 @@ def DLT(pixels_2D, points_3D):
     # print(Vt.shape)
     P = Vt[-1, :]
     P = np.reshape(P, (3, 4))
-    
+    # P = P / P[2,3]
     return P
 
+def decompositionRQ(H):
+    '''
+    Function to perform RQ decomposition
+    Input:
+        H - 3 x 3
+    Returns:
+        R - 3 x 3 - Upper triangular matrix
+        Q - 3 x 3 - Orthogonal matrix
+    '''
+    Q, R = np.linalg.qr(np.flipud(H).T)
+    Q = Q.T
+    R = np.flipud(R.T)
+    R = R[:, ::-1]
+    Q = Q[ ::-1, :]
+    return R, Q
+
+def decompositionProjectionMatrix(P):
+
+    '''
+    Function to decompose projection matrix
+
+    Input:
+        P - 3 x 4 - Camera projection matrix
+    Returns:
+        K - 3 x 3 - Camera intrinsic matrix
+        R - 3 x 3 - Rotation matrix
+        C - 3 x 1 - Camera center
+    '''
+
+    KRMatrix = P[:,:3]
+    C = - np.linalg.inv(KRMatrix) @ P[:,3]
+    K, R = decompositionRQ(KRMatrix)
+    K = K / K[2,2]
+    return K, R, C
 
 if __name__ == "__main__":
     imageDir = './Camera_calibration_data/'
@@ -51,8 +85,7 @@ if __name__ == "__main__":
     calibObjectLegendImage = plt.imread(imageDir + calibObjectLegend)
     
 
-    # plt.imshow(calibObjectImage)
-    # plt.show()
+    
 
     pixels_2D = np.array([[615 , 1700],
                           [1132, 1640],
@@ -70,7 +103,15 @@ if __name__ == "__main__":
                           [   0,  84,   0],
                           [   0, 168,   0],
                           [   0,  28,  56],
-                          [  28,   0,  56]])
+                          [  56,  28,   0]])
 
     P = DLT(pixels_2D, points_3D)
-    print(P)          
+    print('Projection matrix \n', P)          
+    K, R, C = decompositionProjectionMatrix(P)
+    print('Camera intrinsic matrix \n', K)
+    print('Rotation matrix \n', R)
+    print('Camera center \n', C)
+    
+    plt.imshow(calibObjectImage)
+    plt.plot(pixels_2D[:,0],pixels_2D[:,1],'ro')
+    plt.show()
