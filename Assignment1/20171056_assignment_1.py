@@ -3,16 +3,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+'''
+Created on: 10th February 2020 
+Author: Rahul Sajnani
+'''
+
 def DLT(pixels_2D, points_3D):
     '''
-    Function find camera parameters using Direct Linear Transform algorithm
+    Function to find camera parameters using Direct Linear Transform algorithm
 
     Input:
         pixels_2D - 2 x N - Pixel values
         points_3D - 3 x N - World points
     
     Returns:
-        projectionMatrix - 3 x 4 - Camera projection matrix 
+        projectionMatrix - 3 x 4 - Camera projection matrix
+        error - scalar - RMSE reprojection error 
     '''
 
     for i in range(pixels_2D.shape[0]):
@@ -38,9 +44,12 @@ def DLT(pixels_2D, points_3D):
     U, D, Vt = np.linalg.svd(pointMatrix)
     # print(Vt.shape)
     P = Vt[-1, :]
+    print(P.shape)
+    P.shape = (12, 1)
+    error = np.sqrt(np.sum(np.square(pointMatrix @ P)))
     P = np.reshape(P, (3, 4))
     # P = P / P[2,3]
-    return P
+    return P, error
 
 def decompositionRQ(H):
     '''
@@ -77,6 +86,27 @@ def decompositionProjectionMatrix(P):
     K = K / K[2,2]
     return K, R, C
 
+def DLT_RANSAC_optim(pixels_2D, points_3D):
+    '''
+    Function to find camera parameters using Direct Linear Transform algorithm including RANSAC
+
+    Input:
+        pixels_2D - 2 x N - Pixel values
+        points_3D - 3 x N - World points
+    
+    Returns:
+        projectionMatrix - 3 x 4 - Camera projection matrix 
+    '''
+    error = 10000
+    
+    for i in range(50):
+        idx = np.random.randint(pixels_2D.shape[0], size = 8)
+        P, errorP = DLT(pixels_2D[idx, :], points_3D[idx,:])
+        if error > errorP or i == 0:
+            error = errorP
+            optimP = P
+
+    return optimP, error         
 if __name__ == "__main__":
     imageDir = './Camera_calibration_data/'
     calibObject = 'calib-object.jpg'
@@ -86,7 +116,7 @@ if __name__ == "__main__":
     
 
     
-
+    # points for DLT
     pixels_2D = np.array([[615 , 1700],
                           [1132, 1640],
                           [1930, 1640],
@@ -105,13 +135,14 @@ if __name__ == "__main__":
                           [   0,  28,  56],
                           [  56,  28,   0]])
 
-    P = DLT(pixels_2D, points_3D)
+    P, error = DLT(pixels_2D, points_3D)
+    # P, error = DLT_RANSAC_optim(pixels_2D, points_3D)
     print('Projection matrix \n', P)          
     K, R, C = decompositionProjectionMatrix(P)
     print('Camera intrinsic matrix \n', K)
     print('Rotation matrix \n', R)
     print('Camera center \n', C)
     
-    plt.imshow(calibObjectImage)
-    plt.plot(pixels_2D[:,0],pixels_2D[:,1],'ro')
-    plt.show()
+    # plt.imshow(calibObjectImage)
+    # plt.plot(pixels_2D[:,0],pixels_2D[:,1],'ro')
+    # plt.show()
